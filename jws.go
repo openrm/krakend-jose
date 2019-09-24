@@ -33,6 +33,7 @@ type SignatureConfig struct {
 	RefreshURI         string   `json:"refresh_url"`
 	RefreshBodyProperty string  `json:"refresh_property"`
 	RefreshCookieKey   string   `json:"refresh_cookie_key"`
+	RefreshCookieDomain string  `json:"refresh_cookie_domain"`
 }
 
 type SignerConfig struct {

@@ -151,7 +151,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 						return
 					}
 					
-					newCookie := &http.Cookie{Name: scfg.CookieKey, Value: tokenString, HttpOnly: false}
+					newCookie := &http.Cookie{Name: scfg.CookieKey, Value: tokenString, HttpOnly: false, Domain: scfg.RefreshCookieDomain}
 					
 					http.SetCookie(c.Writer, newCookie)
 

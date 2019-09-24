@@ -30,6 +30,9 @@ type SignatureConfig struct {
 	DisableJWKSecurity bool     `json:"disable_jwk_security"`
 	Fingerprints       []string `json:"jwk_fingerprints,omitempty"`
 	LocalCA            string   `json:"jwk_local_ca,omitempty"`
+	RefreshURI         string   `json:"refresh_url"`
+	RefreshBodyProperty string  `json:"refresh_property"`
+	RefreshCookieKey   string   `json:"refresh_cookie_key"`
 }
 
 type SignerConfig struct {

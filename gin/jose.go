@@ -74,6 +74,13 @@ func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, 
 		return nil, "", jwt.ErrExpired
 	}
 
+	_, err = jwt.ParseSigned(cookie.Value)
+
+	if err != nil {
+		logger.Warning("JOSE: refresh token signature is invalid")
+		return nil, "", err
+	}
+
 	client := &http.Client{}
 	req, _ := http.NewRequest("GET", cfg.RefreshURI, nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cookie.Value))

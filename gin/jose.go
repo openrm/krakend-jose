@@ -66,6 +66,8 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	}
 }
 
+var client = &http.Client{}
+
 func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, r *http.Request) (*jwt.JSONWebToken, string, error) {
 	cookie, err := r.Cookie(cfg.RefreshCookieKey)
 
@@ -81,7 +83,7 @@ func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, 
 		return nil, "", err
 	}
 
-	client := &http.Client{}
+	
 	req, _ := http.NewRequest("GET", cfg.RefreshURI, nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cookie.Value))
 	resp, err := client.Do(req)

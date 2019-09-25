@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"encoding/json"
 
 	auth0 "github.com/auth0-community/go-auth0"
 	krakendjose "github.com/openrm/krakend-jose"
@@ -65,6 +66,46 @@ func TokenSigner(hf ginkrakend.HandlerFactory, logger logging.Logger) ginkrakend
 	}
 }
 
+var client = &http.Client{}
+
+func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, r *http.Request) (*jwt.JSONWebToken, string, error) {
+	cookie, err := r.Cookie(cfg.RefreshCookieKey)
+
+	if err != nil {
+		logger.Warning("JOSE: refresh token not set when attempting to refresh")
+		return nil, "", jwt.ErrExpired
+	}
+
+	_, err = jwt.ParseSigned(cookie.Value)
+
+	if err != nil {
+		logger.Warning("JOSE: refresh token signature is invalid")
+		return nil, "", err
+	}
+
+	
+	req, _ := http.NewRequest("GET", cfg.RefreshURI, nil)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cookie.Value))
+	resp, err := client.Do(req)
+
+    if err != nil {
+    	logger.Warning("JOSE: backend error when refreshing token")
+    	return nil, "", err
+    }
+
+	var result map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&result)
+
+	refreshedToken, err := jwt.ParseSigned(result[cfg.RefreshBodyProperty].(string))
+
+	if err != nil {
+		logger.Warning("JOSE: refreshed token is not parsable")
+		return nil, "", err
+	}
+
+	return refreshedToken, result[cfg.RefreshBodyProperty].(string), nil
+}
+
 func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		if rejecterF == nil {
@@ -90,11 +131,45 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
+		refreshTokenEnabled := false
+
+        if scfg.RefreshURI != "" {
+
+	        if scfg.RefreshBodyProperty != "" {
+	        	logger.Warning("JOSE: no backend property specified to get the refresh token for", cfg.Endpoint)
+	        }
+
+	        if scfg.RefreshCookieKey != "" {
+	        	logger.Warning("JOSE: no refresh cookie key set for", cfg.Endpoint)
+	        }
+
+        	logger.Info("JOSE: refresh token enabled on expiration")
+        	refreshTokenEnabled = scfg.RefreshBodyProperty != "" && scfg.RefreshCookieKey != ""
+
+	    }
+
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
-				return
+
+				if err == jwt.ErrExpired && refreshTokenEnabled {
+					var tokenString string
+					token, tokenString, err = GetRefreshedToken(scfg, logger, c.Request)
+					if err != nil {
+						c.AbortWithError(http.StatusUnauthorized, err)
+						return
+					}
+					
+					newCookie := &http.Cookie{Name: scfg.CookieKey, Value: tokenString, HttpOnly: false, Domain: scfg.RefreshCookieDomain}
+					
+					http.SetCookie(c.Writer, newCookie)
+
+					logger.Info("JOSE: Token refreshed")
+
+				} else {
+					c.AbortWithError(http.StatusUnauthorized, err)
+					return
+				}
 			}
 
 			claims := map[string]interface{}{}

@@ -106,6 +106,20 @@ func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, 
 	return refreshedToken, result[cfg.RefreshBodyProperty].(string), nil
 }
 
+func RedirectOrUnauth(scfg *krakendjose.SignatureConfig, c *gin.Context, err error) {
+	if scfg.RedirectOnUnauthorizedTo != "" {
+
+		c.Redirect(http.StatusFound, scfg.RedirectOnUnauthorizedTo)
+		return
+	}
+	
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+	}
+}
+
 func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginkrakend.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		if rejecterF == nil {
@@ -167,7 +181,7 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 					logger.Info("JOSE: Token refreshed")
 
 				} else {
-					c.AbortWithError(http.StatusUnauthorized, err)
+					RedirectOrUnauth(scfg, c, err)
 					return
 				}
 			}
@@ -175,12 +189,12 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 			claims := map[string]interface{}{}
 			err = validator.Claims(c.Request, token, &claims)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				RedirectOrUnauth(scfg, c, err)
 				return
 			}
 
 			if rejecter.Reject(claims) {
-				c.AbortWithStatus(http.StatusUnauthorized)
+				RedirectOrUnauth(scfg, c, nil)
 				return
 			}
 

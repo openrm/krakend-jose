@@ -83,15 +83,15 @@ func GetRefreshedToken(cfg *krakendjose.SignatureConfig, logger logging.Logger, 
 		return nil, "", err
 	}
 
-	
+
 	req, _ := http.NewRequest("GET", cfg.RefreshURI, nil)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", cookie.Value))
 	resp, err := client.Do(req)
 
-    if err != nil {
-    	logger.Warning("JOSE: backend error when refreshing token")
-    	return nil, "", err
-    }
+	if err != nil {
+		logger.Warning("JOSE: backend error when refreshing token")
+		return nil, "", err
+	}
 
 	var result map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&result)
@@ -112,7 +112,7 @@ func RedirectOrUnauth(scfg *krakendjose.SignatureConfig, c *gin.Context, err err
 		c.Redirect(http.StatusFound, scfg.RedirectOnUnauthorizedTo)
 		return
 	}
-	
+
 	if err != nil {
 		c.AbortWithError(http.StatusUnauthorized, err)
 	} else {
@@ -147,25 +147,25 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 
 		refreshTokenEnabled := false
 
-        if scfg.RefreshURI != "" {
+		if scfg.RefreshURI != "" {
 
-	        if scfg.RefreshBodyProperty == "" {
-	        	logger.Warning("JOSE: no backend property specified to get the refresh token for", cfg.Endpoint)
-	        }
+			if scfg.RefreshBodyProperty == "" {
+				logger.Warning("JOSE: no backend property specified to get the refresh token for", cfg.Endpoint)
+			}
 
-	        if scfg.RefreshCookieKey == "" {
-	        	logger.Warning("JOSE: no refresh cookie key set for", cfg.Endpoint)
-	        }
+			if scfg.RefreshCookieKey == "" {
+				logger.Warning("JOSE: no refresh cookie key set for", cfg.Endpoint)
+			}
 
-        	refreshTokenEnabled = scfg.RefreshBodyProperty != "" && scfg.RefreshCookieKey != ""
+			refreshTokenEnabled = scfg.RefreshBodyProperty != "" && scfg.RefreshCookieKey != ""
 
-        	if refreshTokenEnabled == true {
-        		logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
-        	} else {
-        		logger.Error("JOSE: refresh token URI is set but configuration is incomplete")
-        	}
+			if refreshTokenEnabled == true {
+				logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
+			} else {
+				logger.Error("JOSE: refresh token URI is set but configuration is incomplete")
+			}
 
-	    }
+		}
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
@@ -178,9 +178,9 @@ func TokenSignatureValidator(hf ginkrakend.HandlerFactory, logger logging.Logger
 						c.AbortWithError(http.StatusUnauthorized, err)
 						return
 					}
-					
+
 					newCookie := &http.Cookie{Name: scfg.CookieKey, Value: tokenString, HttpOnly: false, Domain: scfg.RefreshCookieDomain, Path: "/"}
-					
+
 					http.SetCookie(c.Writer, newCookie)
 
 					logger.Info("JOSE: Token refreshed")

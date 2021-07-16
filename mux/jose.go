@@ -136,9 +136,26 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
+		refresher, err := krakendjose.NewRefresher(cfg)
+		if err == krakendjose.ErrNoRefresherCfg {
+			logger.Info("JOSE: refresher disabled for the endpoint", cfg.Endpoint)
+		} else if err != nil {
+			logger.Warning(err.Error())
+		} else {
+			logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
+		}
+
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
 			if err != nil {
+				if err == jwt.ErrExpired && refresher != nil {
+					var cookie *http.Cookie
+					if token, cookie, err = refresher.RefreshToken(r, logger); err != nil {
+						http.Error(w, jwt.ErrExpired.Error(), http.StatusUnauthorized)
+						return
+					}
+					http.SetCookie(w, cookie)
+				}
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

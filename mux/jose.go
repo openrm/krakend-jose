@@ -145,30 +145,46 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 			logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
 		}
 
+		var handleUnauth func(http.ResponseWriter, *http.Request, error)
+		if redirectUrl, ok := krakendjose.ExtractRedirectUrl(cfg); ok {
+			handleUnauth = func(w http.ResponseWriter, r *http.Request, err error) {
+				http.Redirect(w, r, redirectUrl, http.StatusFound)
+			}
+		} else {
+			logger.Info("JOSE: redirection disabled for the endpoint", cfg.Endpoint)
+			handleUnauth = func(w http.ResponseWriter, r *http.Request, err error) {
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusUnauthorized)
+				} else {
+					http.Error(w, "", http.StatusUnauthorized)
+				}
+			}
+		}
+
 		return func(w http.ResponseWriter, r *http.Request) {
 			token, err := validator.ValidateRequest(r)
 			if err != nil {
 				if err == jwt.ErrExpired && refresher != nil {
 					var cookie *http.Cookie
 					if token, cookie, err = refresher.RefreshToken(r, logger); err != nil {
-						http.Error(w, jwt.ErrExpired.Error(), http.StatusUnauthorized)
+						handleUnauth(w, r, jwt.ErrExpired)
 						return
 					}
 					http.SetCookie(w, cookie)
 				}
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				handleUnauth(w, r, err)
 				return
 			}
 
 			claims := map[string]interface{}{}
 			err = validator.Claims(r, token, &claims)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				handleUnauth(w, r, err)
 				return
 			}
 
 			if rejecter.Reject(claims) {
-				http.Error(w, "", http.StatusUnauthorized)
+				handleUnauth(w, r, nil)
 				return
 			}
 

@@ -122,6 +122,22 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 			logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
 		}
 
+		var handleUnauth func(*gin.Context, error)
+		if redirectUrl, ok := krakendjose.ExtractRedirectUrl(cfg); ok {
+			handleUnauth = func(c *gin.Context, err error) {
+				c.Redirect(http.StatusFound, redirectUrl)
+			}
+		} else {
+			logger.Info("JOSE: redirection disabled for the endpoint", cfg.Endpoint)
+			handleUnauth = func(c *gin.Context, err error) {
+				if err != nil {
+					c.AbortWithError(http.StatusUnauthorized, err)
+				} else {
+					c.AbortWithStatus(http.StatusUnauthorized)
+				}
+			}
+		}
+
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
 		return func(c *gin.Context) {
@@ -135,19 +151,19 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 					}
 					http.SetCookie(c.Writer, cookie)
 				}
-				c.AbortWithError(http.StatusUnauthorized, err)
+				handleUnauth(c, err)
 				return
 			}
 
 			claims := map[string]interface{}{}
 			err = validator.Claims(c.Request, token, &claims)
 			if err != nil {
-				c.AbortWithError(http.StatusUnauthorized, err)
+				handleUnauth(c, err)
 				return
 			}
 
 			if rejecter.Reject(claims) {
-				c.AbortWithStatus(http.StatusUnauthorized)
+				handleUnauth(c, nil)
 				return
 			}
 

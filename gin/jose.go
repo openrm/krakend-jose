@@ -113,11 +113,28 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 		logger.Info("JOSE: validator enabled for the endpoint", cfg.Endpoint)
 
+		refresher, err := krakendjose.NewRefresher(cfg)
+		if err == krakendjose.ErrNoRefresherCfg {
+			logger.Info("JOSE: refresher disabled for the endpoint", cfg.Endpoint)
+		} else if err != nil {
+			logger.Warning(err.Error())
+		} else {
+			logger.Info("JOSE: refresh token enabled on expiration for", cfg.Endpoint)
+		}
+
 		paramExtractor := extractRequiredJWTClaims(cfg)
 
 		return func(c *gin.Context) {
 			token, err := validator.ValidateRequest(c.Request)
 			if err != nil {
+				if err == jwt.ErrExpired && refresher != nil {
+					var cookie *http.Cookie
+					if token, cookie, err = refresher.RefreshToken(c.Request, logger); err != nil {
+						c.AbortWithError(http.StatusUnauthorized, jwt.ErrExpired)
+						return
+					}
+					http.SetCookie(c.Writer, cookie)
+				}
 				c.AbortWithError(http.StatusUnauthorized, err)
 				return
 			}

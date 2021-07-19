@@ -17,8 +17,8 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
-	return TokenSignatureValidator(TokenSigner(hf, paramExtractor, logger), logger, rejecterF)
+func HandlerFactory(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger, rejecterF krakendjose.RejecterFactory, statusRejecterF krakendjose.StatusRejecterFactory) muxlura.HandlerFactory {
+	return TokenSignatureValidator(TokenSigner(hf, paramExtractor, logger), logger, rejecterF, statusRejecterF)
 }
 
 func TokenSigner(hf muxlura.HandlerFactory, paramExtractor muxlura.ParamExtractor, logger logging.Logger) muxlura.HandlerFactory {
@@ -91,12 +91,17 @@ func jsonRender(w http.ResponseWriter, response *proxy.Response) error {
 	return err
 }
 
-func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) muxlura.HandlerFactory {
+func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory, statusRejecterF krakendjose.StatusRejecterFactory) muxlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) http.HandlerFunc {
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
 		}
 		rejecter := rejecterF.New(logger, cfg)
+
+		if statusRejecterF == nil {
+			statusRejecterF = new(krakendjose.NopStatusRejecterFactory)
+		}
+		statusRejecter := statusRejecterF.New(logger, cfg)
 
 		handler := hf(cfg, prxy)
 		signatureConfig, err := krakendjose.GetSignatureConfig(cfg)
@@ -185,6 +190,11 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 
 			if rejecter.Reject(claims) {
 				handleUnauth(w, r, nil)
+				return
+			}
+
+			if rejected, status := statusRejecter.Reject(claims); rejected {
+				http.Error(w, "", status)
 				return
 			}
 

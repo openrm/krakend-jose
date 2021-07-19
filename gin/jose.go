@@ -17,8 +17,8 @@ import (
 	"gopkg.in/square/go-jose.v2/jwt"
 )
 
-func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
-	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF)
+func HandlerFactory(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory, statusRejecterF krakendjose.StatusRejecterFactory) ginlura.HandlerFactory {
+	return TokenSignatureValidator(TokenSigner(hf, logger), logger, rejecterF, statusRejecterF)
 }
 
 func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.HandlerFactory {
@@ -68,13 +68,18 @@ func TokenSigner(hf ginlura.HandlerFactory, logger logging.Logger) ginlura.Handl
 	}
 }
 
-func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory) ginlura.HandlerFactory {
+func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, rejecterF krakendjose.RejecterFactory, statusRejecterF krakendjose.StatusRejecterFactory) ginlura.HandlerFactory {
 	return func(cfg *config.EndpointConfig, prxy proxy.Proxy) gin.HandlerFunc {
 		logPrefix := "[ENDPOINT: " + cfg.Endpoint + "][JWTValidator]"
 		if rejecterF == nil {
 			rejecterF = new(krakendjose.NopRejecterFactory)
 		}
 		rejecter := rejecterF.New(logger, cfg)
+
+		if statusRejecterF == nil {
+			statusRejecterF = new(krakendjose.NopStatusRejecterFactory)
+		}
+		statusRejecter := statusRejecterF.New(logger, cfg)
 
 		handler := hf(cfg, prxy)
 		scfg, err := krakendjose.GetSignatureConfig(cfg)
@@ -183,6 +188,11 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 					logger.Error(logPrefix, "Token sent by client rejected")
 				}
 				handleUnauth(c, nil)
+				return
+			}
+
+			if rejected, status := statusRejecter.Reject(claims); rejected {
+				c.AbortWithStatus(status)
 				return
 			}
 

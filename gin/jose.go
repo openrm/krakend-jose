@@ -191,6 +191,8 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 
 			paramExtractor(c, claims)
 
+			rewriteHeaders(scfg, c)
+
 			handler(c)
 		}
 	}
@@ -206,6 +208,22 @@ func propagateHeaders(cfg *config.EndpointConfig, propagationCfg [][]string, cla
 			// Set header value - replaces existing one
 			c.Request.Header.Set(k, v)
 		}
+	}
+}
+
+func rewriteHeaders(scfg *SignatureConfig, c *gin.Context) (error) {
+	if cfg.PropagateCookieToHeader != "" {
+		key := scfg.CookieKey
+		if key == "" {
+			key = "access_token"
+		}
+
+		cookie, err := r.Cookie(key)
+		if err != nil {
+			return nil
+		}
+
+		c.Request.Header.Set(cfg.PropagateCookieToHeader, cookie.Value)
 	}
 }
 

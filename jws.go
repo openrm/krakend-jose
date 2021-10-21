@@ -29,6 +29,7 @@ type SignatureConfig struct {
 	RolesKey                string     `json:"roles_key,omitempty"`
 	RolesKeyIsNested        bool       `json:"roles_key_is_nested,omitempty"`
 	CookieKey               string     `json:"cookie_key,omitempty"`
+	PropagateCookieToHeader string     `json:"propagate_cookie_to_header,omitempty"`
 	CipherSuites            []uint16   `json:"cipher_suites,omitempty"`
 	DisableJWKSecurity      bool       `json:"disable_jwk_security"`
 	Fingerprints            []string   `json:"jwk_fingerprints,omitempty"`

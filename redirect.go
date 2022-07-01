@@ -1,7 +1,7 @@
 package jose
 
 import (
-	"github.com/luraproject/lura/config"
+	"github.com/luraproject/lura/v2/config"
 )
 
 const redirectKey = "redirect_on_unauth_to"

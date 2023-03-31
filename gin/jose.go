@@ -155,9 +155,10 @@ func TokenSignatureValidator(hf ginlura.HandlerFactory, logger logging.Logger, r
 						return
 					}
 					http.SetCookie(c.Writer, cookie)
+				} else {
+					handleUnauth(c, err)
+					return
 				}
-				handleUnauth(c, err)
-				return
 			}
 
 			claims := map[string]interface{}{}

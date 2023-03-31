@@ -176,9 +176,10 @@ func TokenSignatureValidator(hf muxlura.HandlerFactory, logger logging.Logger, r
 						return
 					}
 					http.SetCookie(w, cookie)
+				} else {
+					handleUnauth(w, r, err)
+					return
 				}
-				handleUnauth(w, r, err)
-				return
 			}
 
 			claims := map[string]interface{}{}

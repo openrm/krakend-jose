@@ -15,11 +15,12 @@ var client = &http.Client{}
 
 var (
 	ErrNoRefresherCfg = errors.New("JOSE: no refresher config")
+	ErrNoTokenFound   = errors.New("JOSE: no cookie found in the response")
 )
 
 type RefresherConfig struct {
+	CookieKey                string `json:"cookie_key"`
 	RefreshURI               string `json:"refresh_url"`
-	RefreshBodyProperty      string `json:"refresh_property"`
 	RefreshCookieKey         string `json:"refresh_cookie_key"`
 }
 
@@ -36,10 +37,6 @@ func NewRefresher(cfg *config.EndpointConfig) (Refresher, error) {
 
 	if res.RefreshURI == "" {
 		return nil, ErrNoRefresherCfg
-	}
-
-	if res.RefreshBodyProperty == "" {
-		return nil, fmt.Errorf("JOSE: no backend property specified to get the refresh token for %s", cfg.Endpoint)
 	}
 
 	if res.RefreshCookieKey == "" {
@@ -84,27 +81,21 @@ func (r *refresher) RefreshToken(req *http.Request, logger logging.Logger) (*jwt
 		return nil, nil, err
 	}
 
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		logger.Error("JOSE: failed to parse response from refresh URL")
-		return nil, nil, err
-	}
+	cookies := resp.Cookies()
 
-	var tokenStr string
-	if v, ok := result[r.cfg.RefreshBodyProperty]; ok {
-		if s, ok := v.(string); ok {
-			tokenStr = s
+	for i := 0; i < len(cookies); i++ {
+		cookie := cookies[i]
+		if cookie.Name == r.cfg.CookieKey {
+			token, err := jwt.ParseSigned(cookie.Value)
+
+			if err != nil {
+				logger.Warning("JOSE: refreshed token is not parsable")
+				return nil, nil, err
+			}
+
+			return token, cookie, nil
 		}
 	}
 
-	token, err := jwt.ParseSigned(tokenStr)
-
-	if err != nil {
-		logger.Warning("JOSE: refreshed token is not parsable")
-		return nil, nil, err
-	}
-
-	cookie.Value = tokenStr
-
-	return token, cookie, nil
+	return nil, nil, ErrNoTokenFound
 }

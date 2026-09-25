@@ -101,7 +101,7 @@ func Example_hs256_cookie() {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", os.Stderr, "")
-	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil, nil)
 
 	engine := http.ServeMux{}
 
@@ -132,7 +132,7 @@ func Example_hs256_cookie() {
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", os.Stderr, "")
-	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil, nil)
 
 	engine := http.ServeMux{}
 

@@ -58,7 +58,7 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil)
+	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil, nil)
 
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
@@ -268,7 +268,7 @@ func TestCustomHeaderName(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil)
+	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil, nil)
 
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
@@ -345,6 +345,7 @@ func TestTokenSignatureValidator_error(t *testing.T) {
 			}
 		},
 		logging.NoOp,
+		nil,
 		nil,
 	)
 

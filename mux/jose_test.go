@@ -55,7 +55,7 @@ func TestTokenSignatureValidator(t *testing.T) { // skipcq: GO-R1005
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil, nil)
 
 	engine := muxlura.DefaultEngine()
 
@@ -238,7 +238,7 @@ func TestCustomHeaderName(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil)
+	hf := HandlerFactory(muxlura.EndpointHandler, dummyParamsExtractor, logger, nil, nil)
 
 	engine := muxlura.DefaultEngine()
 

@@ -28,7 +28,7 @@ func TestJoseMw(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
 
-	hf = jose.HandlerFactory(hf, logger, new(krakendjose.NopRejecterFactory))
+	hf = jose.HandlerFactory(hf, logger, new(krakendjose.NopRejecterFactory), nil)
 
 	signerProxy := func(_ context.Context, _ *proxy.Request) (*proxy.Response, error) {
 		return &proxy.Response{

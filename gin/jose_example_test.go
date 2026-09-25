@@ -55,12 +55,16 @@ func Example_rs256() {
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  INFO: JOSE: refresher disabled for the endpoint /private
+	//  INFO: JOSE: redirection disabled for the endpoint /private
 	//  DEBUG: [ENDPOINT: /token][JWTSigner] Signer enabled
 	//  INFO: [ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTSigner] Signer enabled
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint. Operation debug is enabled
+	//  INFO: JOSE: refresher disabled for the endpoint /refresh_token
+	//  INFO: JOSE: redirection disabled for the endpoint /refresh_token
 	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
 	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
 	//  ERROR: [ENDPOINT: /private][JWTValidator] Unable to validate the token: Token not found
@@ -98,12 +102,16 @@ func Example_hs256() {
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint
+	//  INFO: JOSE: refresher disabled for the endpoint /private
+	//  INFO: JOSE: redirection disabled for the endpoint /private
 	//  DEBUG: [ENDPOINT: /token][JWTSigner] Signer enabled
 	//  INFO: [ENDPOINT: /token][JWTValidator] Validator disabled for this endpoint
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTSigner] Signer enabled
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /refresh_token][JWTValidator] Validator enabled for this endpoint
+	//  INFO: JOSE: refresher disabled for the endpoint /refresh_token
+	//  INFO: JOSE: redirection disabled for the endpoint /refresh_token
 	//  DEBUG: [ENDPOINT: /private][JWTSigner] Signer disabled
 	//  INFO: [ENDPOINT: /private][JWTValidator] Validator disabled for this endpoint
 }
@@ -138,7 +146,7 @@ func Example_hs256_cookie() {
 
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil)
+	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil, nil)
 
 	gin.SetMode(gin.TestMode)
 	engine := gin.New()
@@ -169,12 +177,14 @@ func Example_hs256_cookie() {
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Roles will be matched against the key: 'roles'
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] No scope validation required
 	//  DEBUG: [ENDPOINT: /private][JWTValidator] Validator enabled for this endpoint
+	//  INFO: JOSE: refresher disabled for the endpoint /private
+	//  INFO: JOSE: redirection disabled for the endpoint /private
 }
 
 func runValidationCycle(signerEndpointCfg, validatorEndpointCfg *config.EndpointConfig) {
 	buf := new(bytes.Buffer)
 	logger, _ := logging.NewLogger("DEBUG", buf, "")
-	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil)
+	hf := HandlerFactory(ginlura.EndpointHandler, logger, nil, nil)
 
 	mixedCfg := &config.EndpointConfig{
 		Timeout:  time.Second,

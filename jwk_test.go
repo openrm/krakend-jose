@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krakend/krakend-jose/v2/secrets"
+	"github.com/openrm/krakend-jose/v2/secrets"
 	"github.com/luraproject/lura/v2/core"
 )
 

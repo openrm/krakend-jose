@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	jose "github.com/openrm/krakend-jose/v2"
+	jose "github.com/krakend/krakend-jose/v2"
 	"github.com/luraproject/lura/v2/logging"
 	"github.com/luraproject/lura/v2/proxy"
 	muxlura "github.com/luraproject/lura/v2/router/mux"
